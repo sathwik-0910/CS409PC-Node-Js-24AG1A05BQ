@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather App Pro</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    transition: background 0.5s ease;
+}
+
+.container {
+    width: 380px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 25px 20px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+h1 {
+    margin-bottom: 25px;
+    font-weight: 600;
+    font-size: 26px;
+}
+
+input {
+    padding: 12px;
+    width: 65%;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+}
+
+button {
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: none;
+    background: #ffffff;
+    color: #333;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 5px;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #e0e0e0;
+}
+
+#result {
+    margin-top: 20px;
+}
+
+.weather-icon {
+    width: 80px;
+}
+
+.temp {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.desc {
+    font-size: 16px;
+    text-transform: capitalize;
+}
+
+.extra {
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+#tempChart {
+    margin-top: 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+}
+
+.loading {
+    font-size: 16px;
+}
+
+.error {
+    color: #ffcccc;
+    font-weight: 600;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🌤 Weather Pro</h1>
+    <input type="text" id="city" placeholder="Enter city name">
+    <button onclick="getWeather()">Search</button>
+
+    <div id="result"></div>
+    <canvas id="tempChart" width="300" height="200"></canvas>
+</div>
+
+<script>
+let chart;
+
+function getWeather() {
+    const city = document.getElementById("city").value.trim();
+    if (!city) {
+        alert("Enter a city name!");
+        return;
+    }
+
+    const apiKey = "98128c2728c92924f368feebee79543a";
+
+    const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+    const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
+
+    document.getElementById("result").innerHTML = "<div class='loading'>⏳ Loading...</div>";
+
+    // CURRENT WEATHER
+    fetch(currentUrl)
+    .then(res => res.json())
+    .then(data => {
+        if (data.cod != 200 && data.cod != "200") {
+            document.getElementById("result").innerHTML = `<div class="error">❌ ${data.message}</div>`;
+            return;
+        }
+
+        const temp = data.main.temp;
+        const desc = data.weather[0].description;
+        const icon = data.weather[0].icon;
+        const humidity = data.main.humidity;
+        const wind = data.wind.speed;
+
+        document.getElementById("result").innerHTML = `
+            <h2>${data.name}</h2>
+            <img class="weather-icon" src="https://openweathermap.org/img/wn/${icon}@2x.png">
+            <div class="temp">${temp}°C</div>
+            <div class="desc">${desc}</div>
+            <div class="extra">💧 Humidity: ${humidity}% <br> 🌬 Wind: ${wind} m/s</div>
+        `;
+
+        // Background change
+        const mainWeather = data.weather[0].main.toLowerCase();
+        const body = document.body;
+
+        if (mainWeather.includes("cloud"))
+            body.style.background = "linear-gradient(135deg, #bdc3c7, #2c3e50)";
+        else if (mainWeather.includes("rain"))
+            body.style.background = "linear-gradient(135deg, #00c6fb, #005bea)";
+        else if (mainWeather.includes("clear"))
+            body.style.background = "linear-gradient(135deg, #f6d365, #fda085)";
+        else
+            body.style.background = "linear-gradient(135deg, #667eea, #764ba2)";
+    })
+    .catch(err => {
+        document.getElementById("result").innerHTML = `<div class="error">❌ Network error</div>`;
+        console.log(err);
+    });
+
+    // FORECAST
+    fetch(forecastUrl)
+    .then(res => res.json())
+    .then(data => {
+        if (data.cod != "200") return;
+
+        const labels = data.list.slice(0, 15).map(item =>
+            item.dt_txt.split(" ")[1].slice(0,5)
+        );
+
+        const temps = data.list.slice(0, 15).map(item =>
+            item.main.temp
+        );
+
+        if (chart) chart.destroy();
+
+        const ctx = document.getElementById("tempChart").getContext("2d");
+
+        chart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Temperature (°C)",
+                    data: temps,
+                    backgroundColor: "rgba(255,255,255,0.2)",
+                    borderColor: "#fff",
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: "white" }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: "white" },
+                        grid: { color: "rgba(255,255,255,0.2)" }
+                    },
+                    y: {
+                        ticks: { color: "white" },
+                        grid: { color: "rgba(255,255,255,0.2)" }
+                    }
+                }
+            }
+        });
+    })
+    .catch(err => console.log("Forecast error:", err));
+}
+
+// ENTER KEY SUPPORT
+document.getElementById("city").addEventListener("keypress", function(e){
+    if (e.key === "Enter") getWeather();
+});
+</script>
+
+</body>
+</html>
