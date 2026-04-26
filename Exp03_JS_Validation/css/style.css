@@ -1,0 +1,37 @@
+body {
+    background: linear-gradient(to right, #667eea, #764ba2);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Center card nicely */
+.container {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+}
+
+/* Card styling */
+.card {
+    border-radius: 15px;
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+/* Inputs */
+.form-control {
+    border-radius: 10px;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 25px;
+    font-weight: bold;
+}
+
+/* Headings */
+h3 {
+    font-weight: bold;
+}
